@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Restricted Textarea — Live Character Count</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --danger:#ef4444;
+      --radius:10px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);
+      padding:24px;
+      color:#0f172a;
+    }
+
+    .card{
+      width:100%;
+      max-width:720px;
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:20px;
+      box-shadow:0 6px 20px rgba(2,6,23,0.08);
+      display:flex;
+      gap:12px;
+      flex-direction:column;
+    }
+
+    h1{font-size:1.05rem;margin:0 0 2px 0;font-weight:600}
+    p.lead{margin:0;color:var(--muted);font-size:.92rem}
+
+    .wrap{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      margin-top:12px;
+      flex-direction:column;
+    }
+
+    .textarea{
+      width:100%;
+      min-height:140px;
+      resize:vertical;
+      padding:14px;
+      border-radius:8px;
+      border:1.5px solid rgba(15,23,42,0.06);
+      font-size:0.95rem;
+      line-height:1.45;
+      background:linear-gradient(180deg,rgba(15,23,42,0.02),transparent);
+      transition:box-shadow .12s, border-color .12s;
+      outline:none;
+    }
+    .textarea:focus{
+      box-shadow:0 6px 18px rgba(37,99,235,0.12);
+      border-color:var(--accent);
+    }
+
+    .textarea.limit{
+      border-color:var(--danger);
+      box-shadow:0 6px 18px rgba(239,68,68,0.12);
+    }
+
+    .meta{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-top:6px;
+    }
+
+    .counter{
+      font-size:.88rem;
+      color:var(--muted);
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .counter .remaining{
+      font-weight:600;
+      color:var(--accent);
+    }
+
+    .counter.limit .remaining{ color:var(--danger) }
+
+    .bar{
+      --w:0%;
+      height:6px;
+      background:rgba(15,23,42,0.06);
+      border-radius:6px;
+      flex:1;
+      margin-left:12px;
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block;
+      height:100%;
+      width:var(--w);
+      background:linear-gradient(90deg,var(--accent),#06b6d4);
+      transition:width .18s linear, background .18s;
+    }
+    .bar.limit > i{
+      background:linear-gradient(90deg,var(--danger),#fb7185);
+    }
+
+    /* small helpers */
+    .hint{font-size:.84rem;color:var(--muted)}
+    .row{display:flex;gap:8px;align-items:center}
+    .muted{color:var(--muted)}
+    @media (min-width:720px){ .wrap{flex-direction:row} .col{flex:1} }
+  </style>
+</head>
+<body>
+  <main class="card" aria-labelledby="title">
+    <div>
+      <h1 id="title">Restricted Textarea</h1>
+      <p class="lead">Live character count with maximum limit. When the limit is hit input is prevented and the field highlights red.</p>
+    </div>
+
+    <div class="wrap">
+      <div class="col">
+        <label for="restricted" class="hint">Your message</label>
+        <!-- maxlength used to block native input beyond limit; JS slices as extra safety -->
+        <textarea id="restricted" class="textarea" maxlength="280" aria-describedby="counter" placeholder="Type something..."></textarea>
+
+        <div class="meta" aria-hidden="false">
+          <div id="counter" class="counter" role="status" aria-live="polite">
+            <span class="muted">Used:</span>
+            <span id="used">0</span>
+            <span class="muted">/</span>
+            <span id="max">280</span>
+            <span class="muted">chars</span>
+            <span class="muted">•</span>
+            <span id="remainingText" class="remaining">280 left</span>
+          </div>
+
+          <div style="display:flex;align-items:center;flex:1;min-width:160px">
+            <div class="bar" id="progress" aria-hidden="true" style="--w:0%">
+              <i></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:220px">
+        <p class="hint">Tips</p>
+        <ul style="margin:8px 0 0 16px; color:var(--muted); font-size:.92rem">
+          <li>Max length enforced: <strong id="maxBadge">280</strong></li>
+          <li>Paste is handled</li>
+          <li>Accessible counter (aria-live)</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const ta = document.getElementById('restricted');
+      const usedEl = document.getElementById('used');
+      const maxEl = document.getElementById('max');
+      const remainingText = document.getElementById('remainingText');
+      const progress = document.getElementById('progress');
+      const max = Number(ta.getAttribute('maxlength')) || 280;
+
+      maxEl.textContent = max;
+      document.getElementById('maxBadge').textContent = max;
+
+      function update() {
+        // Safety: trim value if somehow exceeds maxlength (paste, programmatic)
+        if (ta.value.length > max) ta.value = ta.value.slice(0, max);
+
+        const used = ta.value.length;
+        const remaining = Math.max(0, max - used);
+
+        usedEl.textContent = used;
+        remainingText.textContent = remaining + (remaining === 1 ? ' char left' : ' left');
+
+        // progress width percent
+        const pct = Math.min(100, Math.round((used / max) * 100));
+        progress.style.setProperty('--w', pct + '%');
+
+        // visual limit state
+        const limitHit = used >= max;
+        ta.classList.toggle('limit', limitHit);
+        // change bar style
+        progress.classList.toggle('limit', limitHit);
+
+        // accessibility hint when limit reached
+        if (limitHit) {
+          ta.setAttribute('aria-invalid', 'true');
+          ta.setAttribute('aria-describedby', 'counter');
+        } else {
+          ta.removeAttribute('aria-invalid');
+        }
+      }
+
+      // Update on input (covers typing and paste)
+      ta.addEventListener('input', update);
+
+      // Prevent additional input via keydown when at limit.
+      // This prevents adding characters via composition or some exotic input methods.
+      ta.addEventListener('keydown', (e) => {
+        const allowedKeys = [
+          'Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+          'Home','End','Tab','Enter'
+        ];
+        const ctrlCmd = e.ctrlKey || e.metaKey;
+        // allow copy/cut/select all etc.
+        if (allowedKeys.includes(e.key) || ctrlCmd) return;
+        if (ta.value.length >= max) {
+          // block insertion keys
+          e.preventDefault();
+        }
+      });
+
+      // Initialize state
+      update();
+    })();
+  </script>
+</body>
+</html>
