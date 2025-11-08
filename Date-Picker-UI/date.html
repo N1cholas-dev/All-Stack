@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Static Datepicker UI — HTML & CSS</title>
+  <style>
+    :root{
+      --bg:#0f1724; /* dark slate */
+      --card:#0b1220;
+      --muted:#94a3b8;
+      --accent:#60a5fa;
+      --accent-2:#7c3aed;
+      --surface:#0f1724;
+      --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#071024 0%, #041428 100%);
+      color:#e6eef8;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:40px;
+    }
+
+    /* Datepicker card */
+    .datepicker{
+      width:320px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:var(--radius);
+      box-shadow: 0 10px 30px rgba(2,6,23,0.7);
+      padding:18px;
+      border:1px solid rgba(255,255,255,0.04);
+    }
+
+    .dp-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .month-ctrl{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .btn{
+      background:var(--glass);
+      border-radius:10px;
+      padding:6px 8px;
+      display:inline-grid;
+      place-items:center;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.03);
+      transition:transform .12s ease, background .12s ease;
+    }
+    .btn:active{transform:scale(.98)}
+
+    .month-title{
+      text-align:center;
+      min-width:150px;
+    }
+    .month-title .name{font-weight:600;font-size:16px}
+    .month-title .year{color:var(--muted);font-size:12px}
+
+    /* weekday names */
+    .weekdays{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:6px;
+      color:var(--muted);
+      font-size:12px;
+      text-align:center;
+      margin-bottom:8px;
+    }
+
+    /* days grid */
+    .days{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:8px;
+    }
+
+    .day{
+      padding:10px 8px;
+      border-radius:8px;
+      text-align:center;
+      font-size:14px;
+      background:transparent;
+      cursor:default;
+      user-select:none;
+      transition:all .12s ease;
+    }
+
+    .day:hover{transform:translateY(-4px); box-shadow:0 8px 18px rgba(2,6,23,0.55)}
+
+    /* empty placeholder for leading/trailing blanks */
+    .day.empty{background:transparent;cursor:default;box-shadow:none;transform:none}
+
+    /* today */
+    .day.today{outline:2px solid rgba(96,165,250,0.18); background:rgba(96,165,250,0.06); color:var(--accent)}
+
+    /* selected state - static example: 15 selected */
+    .day.selected{background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#041428; font-weight:700; box-shadow:0 10px 24px rgba(124,58,237,0.18)}
+
+    /* disabled/faded days */
+    .day.off{color:rgba(230,238,248,0.25); cursor:not-allowed}
+
+    /* quick actions */
+    .footer{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .link{font-size:13px;color:var(--muted);cursor:pointer}
+    .apply{padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent-2));font-weight:600;color:#041428}
+
+    /* responsive */
+    @media (max-width:380px){
+      .datepicker{width:100%;}
+    }
+
+    /* small helper to show weekday labels abbreviation */
+    .weekday{font-size:11px}
+
+  </style>
+</head>
+<body>
+  <div class="datepicker" role="application" aria-label="Date picker">
+    <div class="dp-header">
+      <div class="month-ctrl">
+        <div class="btn" title="Prev month">‹</div>
+      </div>
+
+      <div class="month-title">
+        <div class="name">November</div>
+        <div class="year">2025</div>
+      </div>
+
+      <div class="month-ctrl">
+        <div class="btn" title="Next month">›</div>
+      </div>
+    </div>
+
+    <div class="weekdays" aria-hidden="true">
+      <div class="weekday">Min</div>
+      <div class="weekday">Sen</div>
+      <div class="weekday">Sel</div>
+      <div class="weekday">Rab</div>
+      <div class="weekday">Kam</div>
+      <div class="weekday">Jum</div>
+      <div class="weekday">Sab</div>
+    </div>
+
+    <!-- Static month grid example: November 2025 starts on Saturday. We render a full 6x7 grid for consistency. -->
+    <div class="days" role="grid" aria-label="November 2025 calendar">
+      <!-- row 1 -->
+      <div class="day empty"></div>
+      <div class="day empty"></div>
+      <div class="day empty"></div>
+      <div class="day empty"></div>
+      <div class="day empty"></div>
+      <div class="day">1</div>
+      <div class="day">2</div>
+
+      <!-- row 2 -->
+      <div class="day">3</div>
+      <div class="day">4</div>
+      <div class="day">5</div>
+      <div class="day">6</div>
+      <div class="day">7</div>
+      <div class="day">8</div>
+      <div class="day">9</div>
+
+      <!-- row 3 -->
+      <div class="day">10</div>
+      <div class="day">11</div>
+      <div class="day">12</div>
+      <div class="day">13</div>
+      <div class="day">14</div>
+      <div class="day selected">15</div>
+      <div class="day">16</div>
+
+      <!-- row 4 -->
+      <div class="day">17</div>
+      <div class="day">18</div>
+      <div class="day">19</div>
+      <div class="day">20</div>
+      <div class="day">21</div>
+      <div class="day">22</div>
+      <div class="day">23</div>
+
+      <!-- row 5 -->
+      <div class="day">24</div>
+      <div class="day">25</div>
+      <div class="day">26</div>
+      <div class="day">27</div>
+      <div class="day">28</div>
+      <div class="day">29</div>
+      <div class="day">30</div>
+
+      <!-- row 6 - trailing blanks (for consistent 6-row layout) -->
+      <div class="day empty off"> </div>
+      <div class="day empty off"> </div>
+      <div class="day empty off"> </div>
+      <div class="day empty off"> </div>
+      <div class="day empty off"> </div>
+      <div class="day empty off"> </div>
+      <div class="day empty off"> </div>
+    </div>
+
+    <div class="footer">
+      <div class="link">Clear</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="link">Today</div>
+        <div class="apply">Apply</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
